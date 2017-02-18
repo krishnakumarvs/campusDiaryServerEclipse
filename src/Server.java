@@ -2,6 +2,7 @@ import static spark.Spark.*;
 
 import java.sql.ResultSet;
 
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -64,8 +65,10 @@ public class Server {
 							JSONObject payload = new JSONObject();
 
 							Dbcon db = new Dbcon();
-							String sql = "select * from tbl_student where id='"
-									+ userName + "' and password='" + password
+							String sql = "select * from tbl_student where email='"
+									+ userName
+									+ "' and password='"
+									+ password
 									+ "'";
 							ResultSet rs = db.select(sql);
 							if (rs.next()) {
@@ -73,8 +76,13 @@ public class Server {
 								responseData.put("description",
 										"Login was sucess");
 								payload.put("name", rs.getString("name"));
+								payload.put("userId", rs.getString("id"));
 								payload.put("branch", rs.getString("branch"));
 								payload.put("address", rs.getString("address"));
+								payload.put("phone", rs.getString("phone_no"));
+								payload.put("admissionDateMilli",
+										rs.getString("admdate_milli"));
+								payload.put("college", rs.getString("college"));
 								responseData.put("payload", payload);
 							} else {
 								responseData.put("result", false);
@@ -92,5 +100,122 @@ public class Server {
 
 					return responseData;
 				});
+
+		post("/getNotifications", (request, response) -> {
+			System.out.println("getNotifications  API call " + request.body()
+					+ " --- end ");
+			String body = request.body();
+
+			JSONObject responseData = new JSONObject();
+			JSONParser jsonParser = new JSONParser();
+
+			try {
+				JSONObject jsonData = (JSONObject) jsonParser.parse(body);
+
+				if (jsonData.get("userId") == null) {
+					responseData.put("result", false);
+					responseData.put("description", "Please send user ID");
+				} else {
+					JSONObject payload = new JSONObject();
+					JSONArray dataarray = new JSONArray();
+					Dbcon db = new Dbcon();
+
+					String sql = "select * from tbl_notifications";
+					ResultSet rs = db.select(sql);
+					while (rs.next()) {
+						JSONObject notify = new JSONObject();
+						notify.put("title", rs.getString("title"));
+						notify.put("description", rs.getString("description")
+								.replaceAll("(\r\n|\n\r|\r|\n)", "<br />"));
+						dataarray.add(notify);
+					}
+					responseData.put("result", true);
+					responseData.put("description", "Sucessfully fetched ");
+					responseData.put("payload", dataarray);
+				}
+			} catch (ParseException pe) {
+				System.out.println("Error in parseing json data");
+				System.out.println(pe);
+				responseData.put("result", false);
+				responseData.put("description", "Please send a valid json");
+			}
+
+			return responseData;
+		});
+
+		post("/editUserDetails",
+				(request, response) -> {
+					System.out.println("editUserDetails  API call "
+							+ request.body() + " --- end ");
+					String body = request.body();
+
+					JSONObject responseData = new JSONObject();
+					JSONParser jsonParser = new JSONParser();
+					JSONObject payload = new JSONObject();
+
+					try {
+						JSONObject jsonData = (JSONObject) jsonParser
+								.parse(body);
+
+						if (jsonData.get("userId") == null
+								|| jsonData.get("name") == null
+								|| jsonData.get("address") == null
+								|| jsonData.get("phone") == null) {
+
+							responseData.put("result", false);
+							responseData.put("description",
+									"Please send all the user details");
+						} else {
+							Dbcon db = new Dbcon();
+
+							String sql = "update tbl_student set name='"
+									+ jsonData.get("name") + "' , address='"
+									+ jsonData.get("address")
+									+ "' , phone_no='" + jsonData.get("phone")
+									+ "' where id = " + jsonData.get("userId");
+
+							int update = db.update(sql);
+							if (update <= 0) {
+								responseData.put("result", false);
+								responseData
+										.put("description",
+												"Could not update now, Please try again later");
+							} else {
+								
+								sql = "select * from tbl_student where id=" + jsonData.get("userId");
+								ResultSet rs = db.select(sql);
+								
+								if (rs.next()) {
+									responseData.put("result", true);
+									responseData.put("description",
+											"Student details updated successfully");
+									payload.put("name", rs.getString("name"));
+									payload.put("userId", rs.getString("id"));
+									payload.put("branch", rs.getString("branch"));
+									payload.put("address", rs.getString("address"));
+									payload.put("phone", rs.getString("phone_no"));
+									payload.put("admissionDateMilli",
+											rs.getString("admdate_milli"));
+									payload.put("college", rs.getString("college"));
+									responseData.put("payload", payload);
+								} else {
+									responseData.put("result", false);
+									responseData.put("description",
+											"Could not update now, Please try again later");
+								}
+								
+							}
+						}
+					} catch (ParseException pe) {
+						System.out.println("Error in parseing json data");
+						System.out.println(pe);
+						responseData.put("result", false);
+						responseData.put("description",
+								"Please send a valid json");
+					}
+
+					return responseData;
+				});
+
 	}
 }

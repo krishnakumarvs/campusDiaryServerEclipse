@@ -86,6 +86,8 @@ public class Server {
 								payload.put("address", rs.getString("address"));
 								payload.put("phone", rs.getString("phone_no"));
 								payload.put("photo", rs.getString("photo"));
+								payload.put("union_member",
+										rs.getString("union_member"));
 								payload.put("admissionDateMilli",
 										rs.getString("admdate_milli"));
 								payload.put("college", rs.getString("college"));
@@ -234,6 +236,72 @@ public class Server {
 					return responseData;
 				});
 
+		post("/getSyllabus",
+				(request, response) -> {
+					System.out.println("getSyllabus  API call "
+							+ request.body() + " --- end ");
+					String body = request.body();
+
+					JSONObject responseData = new JSONObject();
+					JSONParser jsonParser = new JSONParser();
+
+					try {
+						JSONObject jsonData = (JSONObject) jsonParser
+								.parse(body);
+						System.out.println("23233");
+						if (jsonData.get("subject") == null
+								|| jsonData.get("revision_code") == null) {
+							responseData.put("result", false);
+							responseData.put("description",
+									"Please send subject and revision_code");
+						} else {
+							JSONObject payload = new JSONObject();
+							Dbcon db = new Dbcon();
+
+							String sql = "select * from tbl_sylabus where revision_code='"
+									+ jsonData.get("revision_code")
+									+ "' and subject_name='"
+									+ jsonData.get("subject") + "'";
+							System.out.println(sql);
+							ResultSet rs = db.select(sql);
+							JSONObject syllabus = new JSONObject();
+							if (rs.next()) {
+								syllabus.put("module_1",
+										rs.getString("module_1"));
+								syllabus.put("module_2",
+										rs.getString("module_2"));
+								syllabus.put("module_3",
+										rs.getString("module_3"));
+								syllabus.put("module_4",
+										rs.getString("module_4"));
+								syllabus.put("reference",
+										rs.getString("reference"));
+								syllabus.put("subject_code",
+										rs.getString("subject_code"));
+
+								responseData.put("result", true);
+								responseData.put("description",
+										"Sucessfully fetched ");
+								responseData.put("payload", syllabus);
+							} else {
+								responseData.put("result", false);
+								responseData.put("description",
+										"No result found");
+							}
+						}
+					} catch (ParseException pe) {
+						System.out.println("Error in parseing json data");
+						System.out.println(pe);
+						responseData.put("result", false);
+						responseData.put("description",
+								"Please send a valid json");
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+
+					return responseData;
+				});
+
 		post("/sendFeedback",
 				(request, response) -> {
 					System.out.println("sendFeedback  API call "
@@ -269,6 +337,66 @@ public class Server {
 									+ System.currentTimeMillis()
 									+ "' , '"
 									+ jsonData.get("college_id") + "' )";
+
+							int ins = db.insert(sql);
+							if (ins <= 0) {
+								responseData.put("result", false);
+								responseData
+										.put("description",
+												"Could not send feedback now, Please try again later");
+							} else {
+								responseData.put("result", true);
+								responseData.put("description",
+										"Feedback posted successfully");
+							}
+						}
+					} catch (ParseException pe) {
+						System.out.println("Error in parseing json data");
+						System.out.println(pe);
+						responseData.put("result", false);
+						responseData.put("description",
+								"Please send a valid json");
+					}
+
+					return responseData;
+				});
+
+		post("/sendUnionPost",
+				(request, response) -> {
+					System.out.println("sendUnionPost  API call "
+							+ request.body() + " --- end ");
+					String body = request.body();
+
+					JSONObject responseData = new JSONObject();
+					JSONParser jsonParser = new JSONParser();
+					JSONObject payload = new JSONObject();
+
+					try {
+						JSONObject jsonData = (JSONObject) jsonParser
+								.parse(body);
+
+						if (jsonData.get("title") == null
+								|| jsonData.get("postMessage") == null
+								|| jsonData.get("audience") == null
+								|| jsonData.get("owner_id") == null) {
+
+							responseData.put("result", false);
+							responseData.put("description",
+									"Please send all the details");
+						} else {
+							Dbcon db = new Dbcon();
+
+							String sql = "insert into tbl_news (title, description, owner_id, owner_type, audience,date_milli) values('"
+									+ jsonData.get("title")
+									+ "' , "
+									+ " '"
+									+ jsonData.get("postMessage")
+									+ "' , '"
+									+ jsonData.get("owner_id")
+									+ "','student' ,'"+ jsonData.get("audience") +"', '"
+									+ System.currentTimeMillis()
+									+ "' "
+									+ " )";
 
 							int ins = db.insert(sql);
 							if (ins <= 0) {

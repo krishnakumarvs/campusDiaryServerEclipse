@@ -85,6 +85,7 @@ public class Server {
 								payload.put("branch", rs.getString("branch"));
 								payload.put("address", rs.getString("address"));
 								payload.put("phone", rs.getString("phone_no"));
+								payload.put("photo", rs.getString("photo"));
 								payload.put("admissionDateMilli",
 										rs.getString("admdate_milli"));
 								payload.put("college", rs.getString("college"));

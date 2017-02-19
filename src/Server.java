@@ -7,11 +7,16 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
+import spark.Spark;
+
 public class Server {
 
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 		System.out.println("Server Started............ ");
+
+		staticFiles.externalLocation(Constants.external_file_location);
+
 		options("/*",
 				(request, response) -> {
 

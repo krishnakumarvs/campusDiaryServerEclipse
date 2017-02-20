@@ -155,6 +155,57 @@ public class Server {
 			return responseData;
 		});
 
+		post("/getNews",
+				(request, response) -> {
+					System.out.println("getNews API call " + request.body()
+							+ " --- end ");
+					String body = request.body();
+
+					JSONObject responseData = new JSONObject();
+					JSONParser jsonParser = new JSONParser();
+
+					try {
+						JSONObject jsonData = (JSONObject) jsonParser
+								.parse(body);
+
+						if (jsonData.get("userId") == null
+								|| jsonData.get("college_id") == null) {
+							responseData.put("result", false);
+							responseData.put("description",
+									"Please send college id and user id");
+						} else {
+							JSONObject payload = new JSONObject();
+							JSONArray dataarray = new JSONArray();
+							Dbcon db = new Dbcon();
+
+							String sql = "select * from tbl_news where audience='all' or audience='"+jsonData.get("college_id")+"'";
+							ResultSet rs = db.select(sql);
+							while (rs.next()) {
+								JSONObject news = new JSONObject();
+								news.put("title", rs.getString("title"));
+								news.put("description", rs.getString("description"));
+								news.put("owner_id", rs.getString("owner_id"));
+								news.put("owner_type", rs.getString("owner_type"));
+								news.put("date_milli", rs.getString("date_milli"));
+								
+								dataarray.add(news);
+							}
+							responseData.put("result", true);
+							responseData.put("description",
+									"Sucessfully fetched ");
+							responseData.put("payload", dataarray);
+						}
+					} catch (ParseException pe) {
+						System.out.println("Error in parseing json data");
+						System.out.println(pe);
+						responseData.put("result", false);
+						responseData.put("description",
+								"Please send a valid json");
+					}
+
+					return responseData;
+				});
+
 		post("/editUserDetails",
 				(request, response) -> {
 					System.out.println("editUserDetails  API call "
@@ -393,10 +444,10 @@ public class Server {
 									+ jsonData.get("postMessage")
 									+ "' , '"
 									+ jsonData.get("owner_id")
-									+ "','student' ,'"+ jsonData.get("audience") +"', '"
-									+ System.currentTimeMillis()
-									+ "' "
-									+ " )";
+									+ "','student' ,'"
+									+ jsonData.get("audience")
+									+ "', '"
+									+ System.currentTimeMillis() + "' " + " )";
 
 							int ins = db.insert(sql);
 							if (ins <= 0) {

@@ -1,7 +1,21 @@
 import static spark.Spark.*;
 
+import java.io.File;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.ResultSet;
+import java.util.Collection;
+import java.util.List;
 
+import javax.servlet.MultipartConfigElement;
+import javax.servlet.http.Part;
+
+import org.apache.commons.fileupload.FileItem;
+import org.apache.commons.fileupload.disk.DiskFileItem;
+import org.apache.commons.fileupload.disk.DiskFileItemFactory;
+import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -113,6 +127,63 @@ public class Server {
 					return responseData;
 				});
 
+		post("/upload",
+				"multipart/form-data",
+				(request, response) -> {
+					// - Servlet 3.x config
+				try {
+					String location = Constants.external_file_location;
+					long maxFileSize = 100000000;
+					long maxRequestSize = 100000000;
+					int fileSizeThreshold = 1024;
+
+					MultipartConfigElement multipartConfigElement = new MultipartConfigElement(
+							location, maxFileSize, maxRequestSize,
+							fileSizeThreshold);
+					request.raw().setAttribute(
+							"org.eclipse.jetty.multipartConfig",
+							multipartConfigElement);
+
+					Collection<Part> parts = request.raw().getParts();
+					for (Part part : parts) {
+
+						System.out.println("-------------------------");
+						System.out.println(part);
+						System.out.println("Name:");
+						System.out.println(part.getName());
+						System.out.println("Size: ");
+						System.out.println(part.getSize());
+						System.out.println("Filename:");
+						System.out.println(part.getSubmittedFileName());
+					}
+
+					System.out.println("request.body() ************** "
+							+ request.body());
+
+					String fName = request.raw().getPart("upfile")
+							.getSubmittedFileName();
+					System.out.println("Title: "
+							+ request.raw().getParameter("title"));
+					System.out.println("File: " + fName);
+
+					Part uploadedFile = request.raw().getPart("upfile");
+					Path out = Paths.get(Constants.external_file_location
+							+ request.raw().getParameter("title"));
+					try (final InputStream in = uploadedFile.getInputStream()) {
+						Files.copy(in, out);
+						uploadedFile.delete();
+					}
+					// cleanup
+					multipartConfigElement = null;
+					parts = null;
+					uploadedFile = null;
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+
+				return "OK";
+			});
+
 		post("/getNotifications", (request, response) -> {
 			System.out.println("getNotifications  API call " + request.body()
 					+ " --- end ");
@@ -178,16 +249,21 @@ public class Server {
 							JSONArray dataarray = new JSONArray();
 							Dbcon db = new Dbcon();
 
-							String sql = "select * from tbl_news where audience='all' or audience='"+jsonData.get("college_id")+"'";
+							String sql = "select * from tbl_news where audience='all' or audience='"
+									+ jsonData.get("college_id") + "'";
 							ResultSet rs = db.select(sql);
 							while (rs.next()) {
 								JSONObject news = new JSONObject();
 								news.put("title", rs.getString("title"));
-								news.put("description", rs.getString("description"));
+								news.put("description",
+										rs.getString("description"));
 								news.put("owner_id", rs.getString("owner_id"));
-								news.put("owner_type", rs.getString("owner_type"));
-								news.put("date_milli", rs.getString("date_milli"));
-								
+								news.put("owner_type",
+										rs.getString("owner_type"));
+								news.put("date_milli",
+										rs.getString("date_milli"));
+								news.put("pic", rs.getString("pic"));
+
 								dataarray.add(news);
 							}
 							responseData.put("result", true);
@@ -429,7 +505,8 @@ public class Server {
 						if (jsonData.get("title") == null
 								|| jsonData.get("postMessage") == null
 								|| jsonData.get("audience") == null
-								|| jsonData.get("owner_id") == null) {
+								|| jsonData.get("owner_id") == null
+								|| jsonData.get("pic") == null) {
 
 							responseData.put("result", false);
 							responseData.put("description",
@@ -437,7 +514,7 @@ public class Server {
 						} else {
 							Dbcon db = new Dbcon();
 
-							String sql = "insert into tbl_news (title, description, owner_id, owner_type, audience,date_milli) values('"
+							String sql = "insert into tbl_news (title, description, owner_id, owner_type, audience,date_milli,pic) values('"
 									+ jsonData.get("title")
 									+ "' , "
 									+ " '"
@@ -447,7 +524,9 @@ public class Server {
 									+ "','student' ,'"
 									+ jsonData.get("audience")
 									+ "', '"
-									+ System.currentTimeMillis() + "' " + " )";
+									+ System.currentTimeMillis()
+									+ "' "
+									+ " , '" + jsonData.get("pic") + "' )";
 
 							int ins = db.insert(sql);
 							if (ins <= 0) {

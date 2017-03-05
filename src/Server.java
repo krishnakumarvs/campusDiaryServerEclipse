@@ -226,6 +226,66 @@ public class Server {
 			return responseData;
 		});
 
+		post("/getMyNews",
+				(request, response) -> {
+					System.out.println("getNews API call " + request.body()
+							+ " --- end ");
+					String body = request.body();
+
+					JSONObject responseData = new JSONObject();
+					JSONParser jsonParser = new JSONParser();
+
+					try {
+						JSONObject jsonData = (JSONObject) jsonParser
+								.parse(body);
+
+						if (jsonData.get("userId") == null
+								|| jsonData.get("college_id") == null) {
+							responseData.put("result", false);
+							responseData.put("description",
+									"Please send college id and user id");
+						} else {
+							JSONObject payload = new JSONObject();
+							JSONArray dataarray = new JSONArray();
+							Dbcon db = new Dbcon();
+
+							String sql = "select * from tbl_news where owner_id='"
+									+ jsonData.get("userId") + "'";
+							
+							ResultSet rs = db.select(sql);
+							while (rs.next()) {
+								JSONObject news = new JSONObject();
+								
+								
+								news.put("title", rs.getString("title"));
+								news.put("description",
+										rs.getString("description"));
+								news.put("owner_id", rs.getString("owner_id"));
+								news.put("owner_type",
+										rs.getString("owner_type"));
+								news.put("date_milli",
+										rs.getString("date_milli"));
+								news.put("pic", rs.getString("pic"));
+								news.put("id", rs.getString("id"));
+
+								dataarray.add(news);
+							}
+							responseData.put("result", true);
+							responseData.put("description",
+									"Sucessfully fetched news");
+							responseData.put("payload", dataarray);
+						}
+					} catch (ParseException pe) {
+						System.out.println("Error in parseing json data");
+						System.out.println(pe);
+						responseData.put("result", false);
+						responseData.put("description",
+								"Please send a valid json");
+					}
+
+					return responseData;
+				});
+
 		post("/getNews",
 				(request, response) -> {
 					System.out.println("getNews API call " + request.body()
@@ -281,6 +341,58 @@ public class Server {
 
 					return responseData;
 				});
+
+		post("/deletePost", (request, response) -> {
+			System.out.println("delete post  API call " + request.body()
+					+ " --- end ");
+			String body = request.body(); // all values passed from angularJS
+
+				JSONObject responseData = new JSONObject(); // to return
+															// response as json
+															// object
+
+				JSONParser jsonParser = new JSONParser(); // to check input data
+															// is valid json or
+															// not
+				JSONObject payload = new JSONObject(); // relevent data is
+														// passed inside payload
+				try {
+					JSONObject jsonData = (JSONObject) jsonParser.parse(body); // to
+																				// check														// not
+
+					if (jsonData.get("newsId") == null) {
+
+						responseData.put("result", false);
+						responseData.put("description",
+								"Please send news id to delete news");
+					} else {
+						Dbcon db = new Dbcon();
+						String newsId = jsonData.get("newsId").toString();
+
+						String sql = "delete from tbl_news where id = '"+newsId+"'";
+
+						int upt = db.update(sql);
+						if (upt > 0) {
+							// update aayi
+							responseData.put("result", true);
+							responseData.put("description",
+									"Successfully deleted news");
+						} else {
+							// update aayilla
+							responseData.put("result", false);
+							responseData.put("description",
+									"Could not deleted news");
+						}
+					}
+				} catch (ParseException pe) {
+					System.out.println("Error in parseing json data");
+					System.out.println(pe);
+					responseData.put("result", false);
+					responseData.put("description", "Please send a valid json");
+				}
+
+				return responseData;
+			});
 
 		post("/editUserDetails",
 				(request, response) -> {

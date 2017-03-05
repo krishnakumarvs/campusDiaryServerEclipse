@@ -203,7 +203,7 @@ public class Server {
 					JSONArray dataarray = new JSONArray();
 					Dbcon db = new Dbcon();
 
-					String sql = "select * from tbl_notifications";
+					String sql = "select * from tbl_notifications order by id desc";
 					ResultSet rs = db.select(sql);
 					while (rs.next()) {
 						JSONObject notify = new JSONObject();
@@ -250,7 +250,7 @@ public class Server {
 							Dbcon db = new Dbcon();
 
 							String sql = "select * from tbl_news where owner_id='"
-									+ jsonData.get("userId") + "'";
+									+ jsonData.get("userId") + "' order by id desc";
 							
 							ResultSet rs = db.select(sql);
 							while (rs.next()) {
@@ -310,7 +310,7 @@ public class Server {
 							Dbcon db = new Dbcon();
 
 							String sql = "select * from tbl_news where audience='all' or audience='"
-									+ jsonData.get("college_id") + "'";
+									+ jsonData.get("college_id") + "' order by id desc";
 							ResultSet rs = db.select(sql);
 							while (rs.next()) {
 								JSONObject news = new JSONObject();

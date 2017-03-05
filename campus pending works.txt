@@ -7,9 +7,7 @@
 
 
 
-order of posts - show latest first - server
 
-order of notifications - show latest first - server
 
 completed works
 ===============
@@ -22,3 +20,7 @@ Delete option calling from that page
 
 Delete API for deleting current member posts
 API to get only current member posts.
+
+order of posts - show latest first - server
+
+order of notifications - show latest first - server

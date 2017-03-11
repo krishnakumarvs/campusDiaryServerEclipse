@@ -309,7 +309,7 @@ public class Server {
 							JSONArray dataarray = new JSONArray();
 							Dbcon db = new Dbcon();
 
-							String sql = "select * from tbl_news where audience='all' or audience='"
+							String sql = "select * from tbl_news where audience='All' or audience='"
 									+ jsonData.get("college_id") + "' order by id desc";
 							ResultSet rs = db.select(sql);
 							while (rs.next()) {
@@ -557,7 +557,7 @@ public class Server {
 
 						if (jsonData.get("userId") == null
 								|| jsonData.get("college_id") == null
-								|| jsonData.get("feedbackMessage") == null) {
+								|| jsonData.get("feedbackMessage") == null|| jsonData.get("feedbackTitle") == null) {
 
 							responseData.put("result", false);
 							responseData.put("description",
@@ -565,15 +565,17 @@ public class Server {
 						} else {
 							Dbcon db = new Dbcon();
 
-							String sql = "insert into tbl_feedback (owner, audience, title, date , college_id) values('"
+							String sql = "insert into tbl_feedback (owner, audience, title, date ,description,college_id) values('"
 									+ jsonData.get("userId")
 									+ "' , "
 									+ " '"
 									+ jsonData.get("college_id")
 									+ "' , '"
-									+ jsonData.get("feedbackMessage")
+									+ jsonData.get("feedbackTitle")
 									+ "' , '"
 									+ System.currentTimeMillis()
+									+ "' , '"
+									+ jsonData.get("feedbackMessage")
 									+ "' , '"
 									+ jsonData.get("college_id") + "' )";
 

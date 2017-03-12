@@ -184,47 +184,54 @@ public class Server {
 				return "OK";
 			});
 
-		post("/getNotifications", (request, response) -> {
-			System.out.println("getNotifications  API call " + request.body()
-					+ " --- end ");
-			String body = request.body();
+		post("/getNotifications",
+				(request, response) -> {
+					System.out.println("getNotifications  API call "
+							+ request.body() + " --- end ");
+					String body = request.body();
 
-			JSONObject responseData = new JSONObject();
-			JSONParser jsonParser = new JSONParser();
+					JSONObject responseData = new JSONObject();
+					JSONParser jsonParser = new JSONParser();
 
-			try {
-				JSONObject jsonData = (JSONObject) jsonParser.parse(body);
+					try {
+						JSONObject jsonData = (JSONObject) jsonParser
+								.parse(body);
 
-				if (jsonData.get("userId") == null) {
-					responseData.put("result", false);
-					responseData.put("description", "Please send user ID");
-				} else {
-					JSONObject payload = new JSONObject();
-					JSONArray dataarray = new JSONArray();
-					Dbcon db = new Dbcon();
+						if (jsonData.get("userId") == null) {
+							responseData.put("result", false);
+							responseData.put("description",
+									"Please send user ID");
+						} else {
+							JSONObject payload = new JSONObject();
+							JSONArray dataarray = new JSONArray();
+							Dbcon db = new Dbcon();
 
-					String sql = "select * from tbl_notifications order by id desc";
-					ResultSet rs = db.select(sql);
-					while (rs.next()) {
-						JSONObject notify = new JSONObject();
-						notify.put("title", rs.getString("title"));
-						notify.put("description", rs.getString("description")
-								.replaceAll("(\r\n|\n\r|\r|\n)", "<br />"));
-						dataarray.add(notify);
+							String sql = "select * from tbl_notifications order by id desc";
+							ResultSet rs = db.select(sql);
+							while (rs.next()) {
+								JSONObject notify = new JSONObject();
+								notify.put("title", rs.getString("title"));
+								notify.put(
+										"description",
+										rs.getString("description").replaceAll(
+												"(\r\n|\n\r|\r|\n)", "<br />"));
+								dataarray.add(notify);
+							}
+							responseData.put("result", true);
+							responseData.put("description",
+									"Sucessfully fetched ");
+							responseData.put("payload", dataarray);
+						}
+					} catch (ParseException pe) {
+						System.out.println("Error in parseing json data");
+						System.out.println(pe);
+						responseData.put("result", false);
+						responseData.put("description",
+								"Please send a valid json");
 					}
-					responseData.put("result", true);
-					responseData.put("description", "Sucessfully fetched ");
-					responseData.put("payload", dataarray);
-				}
-			} catch (ParseException pe) {
-				System.out.println("Error in parseing json data");
-				System.out.println(pe);
-				responseData.put("result", false);
-				responseData.put("description", "Please send a valid json");
-			}
 
-			return responseData;
-		});
+					return responseData;
+				});
 
 		post("/getMyNews",
 				(request, response) -> {
@@ -250,13 +257,13 @@ public class Server {
 							Dbcon db = new Dbcon();
 
 							String sql = "select * from tbl_news where owner_id='"
-									+ jsonData.get("userId") + "' order by id desc";
-							
+									+ jsonData.get("userId")
+									+ "' order by id desc";
+
 							ResultSet rs = db.select(sql);
 							while (rs.next()) {
 								JSONObject news = new JSONObject();
-								
-								
+
 								news.put("title", rs.getString("title"));
 								news.put("description",
 										rs.getString("description"));
@@ -310,7 +317,8 @@ public class Server {
 							Dbcon db = new Dbcon();
 
 							String sql = "select * from tbl_news where audience='All' or audience='"
-									+ jsonData.get("college_id") + "' order by id desc";
+									+ jsonData.get("college_id")
+									+ "' order by id desc";
 							ResultSet rs = db.select(sql);
 							while (rs.next()) {
 								JSONObject news = new JSONObject();
@@ -358,7 +366,9 @@ public class Server {
 														// passed inside payload
 				try {
 					JSONObject jsonData = (JSONObject) jsonParser.parse(body); // to
-																				// check														// not
+																				// check
+																				// //
+																				// not
 
 					if (jsonData.get("newsId") == null) {
 
@@ -369,7 +379,8 @@ public class Server {
 						Dbcon db = new Dbcon();
 						String newsId = jsonData.get("newsId").toString();
 
-						String sql = "delete from tbl_news where id = '"+newsId+"'";
+						String sql = "delete from tbl_news where id = '"
+								+ newsId + "'";
 
 						int upt = db.update(sql);
 						if (upt > 0) {
@@ -557,7 +568,8 @@ public class Server {
 
 						if (jsonData.get("userId") == null
 								|| jsonData.get("college_id") == null
-								|| jsonData.get("feedbackMessage") == null|| jsonData.get("feedbackTitle") == null) {
+								|| jsonData.get("feedbackMessage") == null
+								|| jsonData.get("feedbackTitle") == null) {
 
 							responseData.put("result", false);
 							responseData.put("description",
@@ -725,6 +737,187 @@ public class Server {
 						responseData.put("result", false);
 						responseData.put("description",
 								"Please send a valid json");
+					}
+
+					return responseData;
+				});
+
+		post("/getNextSeriesExamDate",
+				(request, response) -> {
+					System.out.println("getNextSeriesExamDate  API call "
+							+ request.body() + " --- end ");
+					String body = request.body();
+
+					JSONObject responseData = new JSONObject();
+					JSONParser jsonParser = new JSONParser();
+
+					try {
+						JSONObject jsonData = (JSONObject) jsonParser
+								.parse(body);
+
+						if (jsonData.get("semester") == null
+								|| jsonData.get("branch") == null
+								|| jsonData.get("college_id") == null) {
+							responseData.put("result", false);
+							responseData.put("description",
+									"Please send semester ");
+						} else {
+							JSONObject payload = new JSONObject();
+							Dbcon db = new Dbcon();
+
+							String sql = "select min(date_milli) as date_milli from tbl_series_time_table where semester='"
+									+ jsonData.get("semester")
+									+ "' and branch='"
+									+ jsonData.get("branch")
+									+ "' and college_id='"
+									+ jsonData.get("college_id") + "'";
+							ResultSet rs = db.select(sql);
+							if (rs.next()) {
+
+								String examDateMilliString = rs
+										.getString("date_milli");
+
+								long examDateMilli = Long
+										.parseLong(examDateMilliString);
+
+								long oneDay = 24 * 60 * 60 * 1000;
+
+								long noOfDaysForExam =  examDateMilli - System
+										.currentTimeMillis();
+								System.out.println(" milli sec diff = " + noOfDaysForExam);
+								
+								noOfDaysForExam = noOfDaysForExam / oneDay;
+								
+								System.out.println("No of days for exam "
+										+ noOfDaysForExam);
+
+								if (noOfDaysForExam <= 5 && noOfDaysForExam >= 1) {
+									JSONObject resutPay = new JSONObject();
+									resutPay.put("noOfDaysForExam",
+											noOfDaysForExam);
+									
+									resutPay.put("title",
+											"Series exam");
+									resutPay.put("message",
+											"You have next series exam in " + noOfDaysForExam + " days");
+									
+									responseData.put("result", true);
+									responseData.put("description",
+											"Sucessfully fetched");
+									responseData.put("payload", resutPay);
+								} else {
+									responseData.put("result", false);
+									responseData.put("description",
+											"No series exams are near");
+								}
+							} else {
+								responseData.put("result", false);
+								responseData.put("description",
+										"No series exams");
+							}
+						}
+					} catch (ParseException pe) {
+						System.out.println("Error in parseing json data");
+						System.out.println(pe);
+						responseData.put("result", false);
+						responseData.put("description",
+								"Please send a valid json");
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+
+					return responseData;
+				});
+		
+		
+		post("/getNextUniversityExamDate",
+				(request, response) -> {
+					System.out.println("getNextUniversityExamDate  API call "
+							+ request.body() + " --- end ");
+					String body = request.body();
+
+					JSONObject responseData = new JSONObject();
+					JSONParser jsonParser = new JSONParser();
+
+					try {
+						JSONObject jsonData = (JSONObject) jsonParser
+								.parse(body);
+
+						if (jsonData.get("semester") == null
+								|| jsonData.get("branch") == null) {
+							responseData.put("result", false);
+							responseData.put("description",
+									"Please send semester ");
+						} else {
+							JSONObject payload = new JSONObject();
+							Dbcon db = new Dbcon();
+
+//							String sql = "select min(date_milli) as date_milli from tbl_series_time_table where semester='"
+//									+ jsonData.get("semester")
+//									+ "' and branch='"
+//									+ jsonData.get("branch")
+//									+ "' and college_id='"
+//									+ jsonData.get("college_id") + "'";
+							
+							String sql = "select min(date_milli) as date_milli from tbl_time_table where semester='"
+									+ jsonData.get("semester")
+									+ "' and branch='"
+									+ jsonData.get("branch")
+									+ "'";
+							
+							ResultSet rs = db.select(sql);
+							if (rs.next()) {
+
+								String examDateMilliString = rs
+										.getString("date_milli");
+
+								long examDateMilli = Long
+										.parseLong(examDateMilliString);
+
+								long oneDay = 24 * 60 * 60 * 1000;
+
+								long noOfDaysForExam =  examDateMilli - System
+										.currentTimeMillis();
+								System.out.println(" milli sec diff = " + noOfDaysForExam);
+								
+								noOfDaysForExam = noOfDaysForExam / oneDay;
+								
+								System.out.println("No of days for exam "
+										+ noOfDaysForExam);
+
+								if (noOfDaysForExam <= 5 && noOfDaysForExam >= 1 ) {
+									JSONObject resutPay = new JSONObject();
+									resutPay.put("noOfDaysForExam",
+											noOfDaysForExam);
+									
+									resutPay.put("title",
+											"University exam");
+									resutPay.put("message",
+											"You have next university exam in " + noOfDaysForExam + " days");
+									
+									responseData.put("result", true);
+									responseData.put("description",
+											"Sucessfully fetched");
+									responseData.put("payload", resutPay);
+								} else {
+									responseData.put("result", false);
+									responseData.put("description",
+											"No university exams are near");
+								}
+							} else {
+								responseData.put("result", false);
+								responseData.put("description",
+										"No university exams");
+							}
+						}
+					} catch (ParseException pe) {
+						System.out.println("Error in parseing json data");
+						System.out.println(pe);
+						responseData.put("result", false);
+						responseData.put("description",
+								"Please send a valid json");
+					} catch (Exception e) {
+						e.printStackTrace();
 					}
 
 					return responseData;

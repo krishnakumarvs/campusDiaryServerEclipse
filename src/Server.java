@@ -127,6 +127,75 @@ public class Server {
 					return responseData;
 				});
 
+		post("/changePassword ",
+				(request, response) -> {
+					System.out.println(request.body() + "---");
+					String body = request.body();
+
+					JSONObject responseData = new JSONObject();
+
+					System.out.println("received data as " + body);
+					JSONParser jsonParser = new JSONParser();
+
+					try {
+						JSONObject jsonData = (JSONObject) jsonParser
+								.parse(body);
+						System.out.println("Data is parsed sucess ");
+
+						if (jsonData.get("userId") == null
+								|| jsonData.get("currentpassword") == null
+								|| jsonData.get("newpassword") == null) {
+							responseData.put("result", false);
+							responseData.put("description",
+									"Please send all the required values");
+						} else {
+							String userId = (String) jsonData.get("userId");
+							String currentpassword = (String) jsonData
+									.get("currentpassword");
+							String newpassword = (String) jsonData
+									.get("newpassword");
+							JSONObject payload = new JSONObject();
+
+							Dbcon db = new Dbcon();
+							String sql = "select * from tbl_student where id='"
+									+ userId + "' and password='"
+									+ currentpassword + "'";
+							ResultSet rs = db.select(sql);
+							if (rs.next()) {
+
+								int updt = db
+										.update("update tbl_student set password='"
+												+ newpassword
+												+ "' where id="
+												+ userId);
+								if (updt > 0) {
+									responseData.put("result", true);
+									responseData.put("description",
+											"Password changed successfully");
+								} else {
+									responseData.put("result", false);
+									responseData.put("description",
+											"Could not change passord, please try later");
+								}
+
+							} else {
+								responseData.put("result", false);
+								responseData
+										.put("description",
+												"Could not change password, please check current password");
+							}
+						}
+					} catch (ParseException pe) {
+						System.out.println("Error in parseing json data");
+						System.out.println(pe);
+						responseData.put("result", false);
+						responseData.put("description",
+								"Please send a valid json");
+					}
+
+					return responseData;
+				});
+
 		post("/upload",
 				"multipart/form-data",
 				(request, response) -> {
@@ -782,25 +851,27 @@ public class Server {
 
 								long oneDay = 24 * 60 * 60 * 1000;
 
-								long noOfDaysForExam =  examDateMilli - System
-										.currentTimeMillis();
-								System.out.println(" milli sec diff = " + noOfDaysForExam);
-								
+								long noOfDaysForExam = examDateMilli
+										- System.currentTimeMillis();
+								System.out.println(" milli sec diff = "
+										+ noOfDaysForExam);
+
 								noOfDaysForExam = noOfDaysForExam / oneDay;
-								
+
 								System.out.println("No of days for exam "
 										+ noOfDaysForExam);
 
-								if (noOfDaysForExam <= 5 && noOfDaysForExam >= 1) {
+								if (noOfDaysForExam <= 5
+										&& noOfDaysForExam >= 1) {
 									JSONObject resutPay = new JSONObject();
 									resutPay.put("noOfDaysForExam",
 											noOfDaysForExam);
-									
-									resutPay.put("title",
-											"Series exam");
+
+									resutPay.put("title", "Series exam");
 									resutPay.put("message",
-											"You have next series exam in " + noOfDaysForExam + " days");
-									
+											"You have next series exam in "
+													+ noOfDaysForExam + " days");
+
 									responseData.put("result", true);
 									responseData.put("description",
 											"Sucessfully fetched");
@@ -828,100 +899,90 @@ public class Server {
 
 					return responseData;
 				});
-		
-		
-		post("/getNextUniversityExamDate",
-				(request, response) -> {
-					System.out.println("getNextUniversityExamDate  API call "
-							+ request.body() + " --- end ");
-					String body = request.body();
 
-					JSONObject responseData = new JSONObject();
-					JSONParser jsonParser = new JSONParser();
+		post("/getNextUniversityExamDate", (request, response) -> {
+			System.out.println("getNextUniversityExamDate  API call "
+					+ request.body() + " --- end ");
+			String body = request.body();
 
-					try {
-						JSONObject jsonData = (JSONObject) jsonParser
-								.parse(body);
+			JSONObject responseData = new JSONObject();
+			JSONParser jsonParser = new JSONParser();
 
-						if (jsonData.get("semester") == null
-								|| jsonData.get("branch") == null) {
-							responseData.put("result", false);
-							responseData.put("description",
-									"Please send semester ");
-						} else {
-							JSONObject payload = new JSONObject();
-							Dbcon db = new Dbcon();
+			try {
+				JSONObject jsonData = (JSONObject) jsonParser.parse(body);
 
-//							String sql = "select min(date_milli) as date_milli from tbl_series_time_table where semester='"
-//									+ jsonData.get("semester")
-//									+ "' and branch='"
-//									+ jsonData.get("branch")
-//									+ "' and college_id='"
-//									+ jsonData.get("college_id") + "'";
-							
-							String sql = "select min(date_milli) as date_milli from tbl_time_table where semester='"
-									+ jsonData.get("semester")
-									+ "' and branch='"
-									+ jsonData.get("branch")
-									+ "'";
-							
-							ResultSet rs = db.select(sql);
-							if (rs.next()) {
+				if (jsonData.get("semester") == null
+						|| jsonData.get("branch") == null) {
+					responseData.put("result", false);
+					responseData.put("description", "Please send semester ");
+				} else {
+					JSONObject payload = new JSONObject();
+					Dbcon db = new Dbcon();
 
-								String examDateMilliString = rs
-										.getString("date_milli");
+					// String sql =
+					// "select min(date_milli) as date_milli from tbl_series_time_table where semester='"
+					// + jsonData.get("semester")
+					// + "' and branch='"
+					// + jsonData.get("branch")
+					// + "' and college_id='"
+					// + jsonData.get("college_id") + "'";
 
-								long examDateMilli = Long
-										.parseLong(examDateMilliString);
+				String sql = "select min(date_milli) as date_milli from tbl_time_table where semester='"
+						+ jsonData.get("semester")
+						+ "' and branch='"
+						+ jsonData.get("branch") + "'";
 
-								long oneDay = 24 * 60 * 60 * 1000;
+				ResultSet rs = db.select(sql);
+				if (rs.next()) {
 
-								long noOfDaysForExam =  examDateMilli - System
-										.currentTimeMillis();
-								System.out.println(" milli sec diff = " + noOfDaysForExam);
-								
-								noOfDaysForExam = noOfDaysForExam / oneDay;
-								
-								System.out.println("No of days for exam "
-										+ noOfDaysForExam);
+					String examDateMilliString = rs.getString("date_milli");
 
-								if (noOfDaysForExam <= 5 && noOfDaysForExam >= 1 ) {
-									JSONObject resutPay = new JSONObject();
-									resutPay.put("noOfDaysForExam",
-											noOfDaysForExam);
-									
-									resutPay.put("title",
-											"University exam");
-									resutPay.put("message",
-											"You have next university exam in " + noOfDaysForExam + " days");
-									
-									responseData.put("result", true);
-									responseData.put("description",
-											"Sucessfully fetched");
-									responseData.put("payload", resutPay);
-								} else {
-									responseData.put("result", false);
-									responseData.put("description",
-											"No university exams are near");
-								}
-							} else {
-								responseData.put("result", false);
-								responseData.put("description",
-										"No university exams");
-							}
-						}
-					} catch (ParseException pe) {
-						System.out.println("Error in parseing json data");
-						System.out.println(pe);
+					long examDateMilli = Long.parseLong(examDateMilliString);
+
+					long oneDay = 24 * 60 * 60 * 1000;
+
+					long noOfDaysForExam = examDateMilli
+							- System.currentTimeMillis();
+					System.out.println(" milli sec diff = " + noOfDaysForExam);
+
+					noOfDaysForExam = noOfDaysForExam / oneDay;
+
+					System.out
+							.println("No of days for exam " + noOfDaysForExam);
+
+					if (noOfDaysForExam <= 5 && noOfDaysForExam >= 1) {
+						JSONObject resutPay = new JSONObject();
+						resutPay.put("noOfDaysForExam", noOfDaysForExam);
+
+						resutPay.put("title", "University exam");
+						resutPay.put("message",
+								"You have next university exam in "
+										+ noOfDaysForExam + " days");
+
+						responseData.put("result", true);
+						responseData.put("description", "Sucessfully fetched");
+						responseData.put("payload", resutPay);
+					} else {
 						responseData.put("result", false);
 						responseData.put("description",
-								"Please send a valid json");
-					} catch (Exception e) {
-						e.printStackTrace();
+								"No university exams are near");
 					}
+				} else {
+					responseData.put("result", false);
+					responseData.put("description", "No university exams");
+				}
+			}
+		} catch (ParseException pe) {
+			System.out.println("Error in parseing json data");
+			System.out.println(pe);
+			responseData.put("result", false);
+			responseData.put("description", "Please send a valid json");
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 
-					return responseData;
-				});
+		return responseData;
+	}	);
 
 		post("/getSeriesTimeTable",
 				(request, response) -> {

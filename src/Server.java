@@ -126,6 +126,68 @@ public class Server {
 
 					return responseData;
 				});
+		
+		post("/forgotPassword",
+				(request, response) -> {
+					System.out.println("forgotPassword API called --- ");
+					String body = request.body();
+					JSONObject responseData = new JSONObject();
+
+					System.out.println("received data as " + body);
+					JSONParser jsonParser = new JSONParser();
+
+					try {
+						JSONObject jsonData = (JSONObject) jsonParser
+								.parse(body);
+						System.out.println("Data is parsed sucess ");
+
+						if (jsonData.get("email") == null) {
+							responseData.put("result", false);
+							responseData.put("description",
+									"Please send email id");
+						} else {
+							String email_id = (String) jsonData.get("email");
+							JSONObject payload = new JSONObject();
+
+							Dbcon db = new Dbcon();
+							String sql = "select * from tbl_student where email='"
+									+ email_id + "' ";
+							ResultSet rs = db.select(sql);
+							if (rs.next()) {
+								String newPassword = MailSender
+										.generatePassword(5);
+								new Dbcon()
+										.update("update tbl_student set password='"
+												+ newPassword
+												+ "' where email='"
+												+ email_id + "'");
+								String messageBody = "Hi, you have requested to change password, and your new password will be "
+										+ newPassword
+										+ ". Please log in and change password immediately";
+								String to[] = { email_id };
+								MailSender.sendFromGMail(to,
+										"Campus Diary - Forgot password ",
+										messageBody);
+								responseData.put("result", true);
+								responseData
+										.put("description",
+												"Password is reseted, please check your email");
+							} else {
+								responseData.put("result", false);
+								responseData.put("description",
+										"No such account could be found");
+							}
+						}
+					} catch (ParseException pe) {
+						System.out.println("Error in parseing json data");
+						System.out.println(pe);
+						responseData.put("result", false);
+						responseData.put("description",
+								"Please send a valid json");
+					}
+
+					return responseData;
+				});
 
 		post("/changePassword ",
 				(request, response) -> {

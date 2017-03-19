@@ -88,7 +88,7 @@ public class Server {
 									+ userName
 									+ "' and password='"
 									+ password
-									+ "'";
+									+ "' and status=1";
 							ResultSet rs = db.select(sql);
 							if (rs.next()) {
 								responseData.put("result", true);
@@ -1077,6 +1077,7 @@ public class Server {
 									+ "' and college_id='"
 									+ jsonData.get("college_id") + "'";
 							ResultSet rs = db.select(sql);
+							System.out.println(sql);
 							while (rs.next()) {
 								JSONObject eachExam = new JSONObject();
 
